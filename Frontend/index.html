@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NotebookLM Clone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --ink: #0e0e11;
+      --paper: #f5f2ec;
+      --cream: #ede9e0;
+      --warm-white: #faf8f4;
+      --accent: #c8410a;
+      --accent-muted: #e8612a;
+      --blue-ink: #1a3a6b;
+      --rule: #d4cfc5;
+      --text-primary: #1c1a17;
+      --text-secondary: #6b6458;
+      --text-tertiary: #9b9288;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.07);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Geist', sans-serif;
+      background: var(--paper);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 0;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 27px,
+          rgba(180,170,155,0.18) 27px,
+          rgba(180,170,155,0.18) 28px
+        );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Left margin line */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0; bottom: 0;
+      left: 72px;
+      width: 2px;
+      background: rgba(200, 65, 10, 0.18);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 60px 40px 80px 100px;
+    }
+
+    /* ── Header ── */
+    header {
+      margin-bottom: 56px;
+      animation: fadeSlideDown 0.6s ease both;
+    }
+
+    .header-eyebrow {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(2.6rem, 6vw, 4rem);
+      font-weight: 400;
+      line-height: 1.05;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .header-sub {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+      max-width: 420px;
+    }
+
+    /* ── Divider ── */
+    .rule {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 40px 0;
+      color: var(--text-tertiary);
+    }
+
+    .rule::before, .rule::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .rule-dot {
+      font-size: 0.5rem;
+      color: var(--rule);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--warm-white);
+      border: 1px solid var(--rule);
+      border-radius: 4px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      animation: fadeSlideUp 0.5s ease both;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+      border-radius: 4px 4px 0 0;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover::before {
+      opacity: 1;
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #c8c0b4;
+    }
+
+    .card-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .card h2 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.35rem;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── File Input ── */
+    .file-drop-zone {
+      border: 1.5px dashed #c8c0b4;
+      border-radius: 4px;
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 16px;
+      background: var(--cream);
+      position: relative;
+    }
+
+    .file-drop-zone:hover, .file-drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(200, 65, 10, 0.04);
+    }
+
+    .file-drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .file-icon {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .file-drop-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: block;
+    }
+
+    .file-drop-label strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .file-name-display {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      min-height: 18px;
+    }
+
+    /* ── Text Input ── */
+    .input-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid #d4cfc5;
+      border-radius: 4px;
+      background: var(--cream);
+      color: var(--text-primary);
+      font-family: 'Geist', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 300;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    input[type="text"]::placeholder { color: var(--text-tertiary); }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      background: var(--warm-white);
+      box-shadow: 0 0 0 3px rgba(200, 65, 10, 0.08);
+    }
+
+    /* ── Buttons ── */
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 4px;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'Geist', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: white;
+      opacity: 0;
+      transition: opacity 0.18s;
+    }
+
+    button:hover {
+      background: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(200, 65, 10, 0.28);
+    }
+
+    button:hover::after { opacity: 0.06; }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .btn-icon {
+      font-size: 0.9rem;
+    }
+
+    /* ── Answer Box ── */
+    #answerBox {
+      background: var(--cream);
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 4px 4px 0;
+      padding: 20px 22px;
+      min-height: 100px;
+      line-height: 1.85;
+      font-size: 0.92rem;
+      font-weight: 300;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      overflow-wrap: break-word;
+      font-family: 'Geist', sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    #answerBox.loading {
+      color: var(--text-tertiary);
+      font-style: italic;
+    }
+
+    #answerBox.has-answer {
+      border-left-color: var(--blue-ink);
+    }
+
+    .answer-placeholder {
+      color: var(--text-tertiary);
+      font-style: italic;
+      font-size: 0.88rem;
+    }
+
+    /* ── Loader ── */
+    .loader {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .loader span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: bounce 1.2s ease infinite;
+    }
+
+    .loader span:nth-child(2) { animation-delay: 0.2s; }
+    .loader span:nth-child(3) { animation-delay: 0.4s; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--rule);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      animation: fadeSlideUp 0.6s ease 0.5s both;
+    }
+
+    .footer-note {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--cream); }
+    ::-webkit-scrollbar-thumb { background: #c8c0b4; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a09890; }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      body::after { left: 0; width: 0; }
+
+      .page-wrap {
+        padding: 40px 20px 60px;
+      }
+
+      h1 { font-size: 2.2rem; }
+
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <header>
+    <div class="header-eyebrow">Retrieval-Augmented Generation</div>
+    <h1>Notebook<em>LM</em></h1>
+    <p class="header-sub">Upload a document, ask questions. Get grounded answers from your own source material.</p>
+  </header>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-num">01 / UPLOAD</div>
+    <h2>Add your document</h2>
+
+    <div class="file-drop-zone" id="dropZone">
+      <input type="file" id="pdfFile" accept=".pdf" />
+      <span class="file-icon">📄</span>
+      <span class="file-drop-label"><strong>Choose a PDF</strong> or drag it here</span>
+    </div>
+    <div class="file-name-display" id="fileNameDisplay">No file selected</div>
+
+    <br>
+    <button id="uploadBtn">
+      <span class="btn-icon">↑</span> Upload &amp; Index
+    </button>
+  </div>
+
+  <!-- Ask -->
+  <div class="card">
+    <div class="card-num">02 / ASK</div>
+    <h2>Ask a question</h2>
+
+    <div class="input-wrap">
+      <input type="text" id="question" placeholder="What does the document say about…" />
+    </div>
+    <button id="askBtn">
+      <span class="btn-icon">→</span> Get Answer
+    </button>
+  </div>
+
+  <!-- Answer -->
+  <div class="card">
+    <div class="card-num">03 / ANSWER</div>
+    <h2>Response</h2>
+    <div id="answerBox">
+      <span class="answer-placeholder">Your answer will appear here once you ask a question.</span>
+    </div>
+  </div>
+
+  <footer>
+    <span class="footer-note">RAG · PDF INDEXING · SEMANTIC SEARCH</span>
+    <span class="footer-note">NOTEBOOKLM CLONE</span>
+  </footer>
+
+</div>
+
+<script>
+  const BACKEND_URL = "http://localhost:5000";
+
+  const uploadBtn  = document.getElementById("uploadBtn");
+  const askBtn     = document.getElementById("askBtn");
+  const answerBox  = document.getElementById("answerBox");
+  const dropZone   = document.getElementById("dropZone");
+  const fileInput  = document.getElementById("pdfFile");
+  const fileLabel  = document.getElementById("fileNameDisplay");
+
+  // Show filename on selection
+  fileInput.addEventListener("change", () => {
+    const f = fileInput.files[0];
+    fileLabel.textContent = f ? f.name : "No file selected";
+  });
+
+  // Drag-over styling
+  dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+  dropZone.addEventListener("drop", () => dropZone.classList.remove("drag-over"));
+
+  function setAnswer(html, state = "") {
+    answerBox.className = state;
+    answerBox.innerHTML = html;
+  }
+
+  uploadBtn.addEventListener("click", async () => {
+    const file = fileInput.files[0];
+    if (!file) { alert("Please select a PDF first."); return; }
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+
+    setAnswer(`<span class="loader"><span></span><span></span><span></span></span>&ensp;Uploading and indexing…`, "loading");
+
+    try {
+      const res  = await fetch(`${BACKEND_URL}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+      setAnswer(data.success ? data.message : `⚠ ${data.error}`, data.success ? "has-answer" : "");
+    } catch (err) {
+      setAnswer(`⚠ ${err.message}`);
+    }
+  });
+
+  askBtn.addEventListener("click", async () => {
+    const question = document.getElementById("question").value.trim();
+    if (!question) { alert("Please enter a question."); return; }
+
+    setAnswer(`<span class="loader"><span></span><span></span><span></span></span>&ensp;Generating answer…`, "loading");
+
+    try {
+      const res  = await fetch(`${BACKEND_URL}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      setAnswer(data.success ? data.answer : `⚠ ${data.error}`, data.success ? "has-answer" : "");
+    } catch (err) {
+      setAnswer(`⚠ ${err.message}`);
+    }
+  });
+
+  // Allow Enter key to submit question
+  document.getElementById("question").addEventListener("keydown", e => {
+    if (e.key === "Enter") askBtn.click();
+  });
+</script>
+</body>
+</html>
